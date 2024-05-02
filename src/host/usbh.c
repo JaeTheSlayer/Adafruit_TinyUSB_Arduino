@@ -38,6 +38,21 @@
 #include "host/usbh_pvt.h"
 #include "hub.h"
 
+// ESP32 out-of-sync
+#ifdef ARDUINO_ARCH_ESP32
+  #ifndef TUSB_VERSION_BUILD
+    #define TUSB_VERSION_BUILD 0
+  #endif
+
+  #ifndef TUSB_VERSION_NUMBER
+    #define TUSB_VERSION_NUMBER (TUSB_VERSION_MAJOR << 24 | TUSB_VERSION_MINOR << 16 | TUSB_VERSION_REVISION << 8 | TUSB_VERSION_BUILD)
+  #endif
+#endif
+
+#if TUSB_VERSION_NUMBER >= 0x0160003
+  #define ESP32_HAS_DEINIT
+#endif
+
 //--------------------------------------------------------------------+
 // USBH Configuration
 //--------------------------------------------------------------------+
@@ -170,9 +185,11 @@ typedef struct {
 static usbh_class_driver_t const usbh_class_drivers[] = {
     #if CFG_TUH_CDC
     {
+        #ifdef ESP32_HAS_DEINIT
         .name       = DRIVER_NAME("CDC"),
-        .init       = cdch_init,
         .deinit     = cdch_deinit,
+        #endif
+        .init       = cdch_init,
         .open       = cdch_open,
         .set_config = cdch_set_config,
         .xfer_cb    = cdch_xfer_cb,
@@ -182,9 +199,11 @@ static usbh_class_driver_t const usbh_class_drivers[] = {
 
     #if CFG_TUH_MSC
     {
+        #ifdef ESP32_HAS_DEINIT
         .name       = DRIVER_NAME("MSC"),
-        .init       = msch_init,
         .deinit     = msch_deinit,
+        #endif
+        .init       = msch_init,
         .open       = msch_open,
         .set_config = msch_set_config,
         .xfer_cb    = msch_xfer_cb,
@@ -194,9 +213,11 @@ static usbh_class_driver_t const usbh_class_drivers[] = {
 
     #if CFG_TUH_HID
     {
+        #ifdef ESP32_HAS_DEINIT
         .name       = DRIVER_NAME("HID"),
-        .init       = hidh_init,
         .deinit     = hidh_deinit,
+        #endif
+        .init       = hidh_init,
         .open       = hidh_open,
         .set_config = hidh_set_config,
         .xfer_cb    = hidh_xfer_cb,
@@ -206,9 +227,11 @@ static usbh_class_driver_t const usbh_class_drivers[] = {
 
     #if CFG_TUH_HUB
     {
+        #ifdef ESP32_HAS_DEINIT
         .name       = DRIVER_NAME("HUB"),
-        .init       = hub_init,
         .deinit     = hub_deinit,
+        #endif
+        .init       = hub_init,
         .open       = hub_open,
         .set_config = hub_set_config,
         .xfer_cb    = hub_xfer_cb,
@@ -218,9 +241,11 @@ static usbh_class_driver_t const usbh_class_drivers[] = {
 
     #if CFG_TUH_VENDOR
     {
+      #ifdef ESP32_HAS_DEINIT
       .name       = DRIVER_NAME("VENDOR"),
-      .init       = cush_init,
       .deinit     = cush_deinit,
+      #endif
+      .init       = cush_init,
       .open       = cush_open,
       .set_config = cush_set_config,
       .xfer_cb    = cush_isr,
@@ -453,6 +478,7 @@ bool tuh_deinit(uint8_t rhport) {
 
   // deinit host stack if no controller is active
   if (!tuh_inited()) {
+    #ifdef ESP32_HAS_DEINIT
     // Class drivers
     for (uint8_t drv_id = 0; drv_id < TOTAL_DRIVER_COUNT; drv_id++) {
       usbh_class_driver_t const* driver = get_driver(drv_id);
@@ -461,6 +487,7 @@ bool tuh_deinit(uint8_t rhport) {
         driver->deinit();
       }
     }
+    #endif
 
     osal_queue_delete(_usbh_q);
     _usbh_q = NULL;

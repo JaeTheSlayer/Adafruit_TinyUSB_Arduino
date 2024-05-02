@@ -40,6 +40,21 @@
 #include "device/usbd.h"
 #include "device/usbd_pvt.h"
 
+// ESP32 out-of-sync
+#ifdef ARDUINO_ARCH_ESP32
+  #ifndef TUSB_VERSION_BUILD
+    #define TUSB_VERSION_BUILD 0
+  #endif
+
+  #ifndef TUSB_VERSION_NUMBER
+    #define TUSB_VERSION_NUMBER (TUSB_VERSION_MAJOR << 24 | TUSB_VERSION_MINOR << 16 | TUSB_VERSION_REVISION << 8 | TUSB_VERSION_BUILD)
+  #endif
+#endif
+
+#if TUSB_VERSION_NUMBER >= 0x0160003
+  #define ESP32_HAS_DEINIT
+#endif
+
 //--------------------------------------------------------------------+
 // USBD Configuration
 //--------------------------------------------------------------------+
@@ -106,7 +121,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("CDC")
         .init             = cdcd_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = cdcd_deinit,
+        #endif
         .reset            = cdcd_reset,
         .open             = cdcd_open,
         .control_xfer_cb  = cdcd_control_xfer_cb,
@@ -119,7 +136,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("MSC")
         .init             = mscd_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = NULL,
+        #endif
         .reset            = mscd_reset,
         .open             = mscd_open,
         .control_xfer_cb  = mscd_control_xfer_cb,
@@ -132,7 +151,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("HID")
         .init             = hidd_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = hidd_deinit,
+        #endif
         .reset            = hidd_reset,
         .open             = hidd_open,
         .control_xfer_cb  = hidd_control_xfer_cb,
@@ -158,7 +179,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("VIDEO")
         .init             = videod_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = videod_deinit,
+        #endif
         .reset            = videod_reset,
         .open             = videod_open,
         .control_xfer_cb  = videod_control_xfer_cb,
@@ -171,7 +194,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("MIDI")
         .init             = midid_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = midid_deinit,
+        #endif
         .open             = midid_open,
         .reset            = midid_reset,
         .control_xfer_cb  = midid_control_xfer_cb,
@@ -184,7 +209,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("VENDOR")
         .init             = vendord_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = vendord_deinit,
+        #endif
         .reset            = vendord_reset,
         .open             = vendord_open,
         .control_xfer_cb  = tud_vendor_control_xfer_cb,
@@ -197,7 +224,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("TMC")
         .init             = usbtmcd_init_cb,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = usbtmcd_deinit,
+        #endif
         .reset            = usbtmcd_reset_cb,
         .open             = usbtmcd_open_cb,
         .control_xfer_cb  = usbtmcd_control_xfer_cb,
@@ -210,7 +239,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("DFU-RUNTIME")
         .init             = dfu_rtd_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = dfu_rtd_deinit,
+        #endif
         .reset            = dfu_rtd_reset,
         .open             = dfu_rtd_open,
         .control_xfer_cb  = dfu_rtd_control_xfer_cb,
@@ -223,7 +254,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("DFU")
         .init             = dfu_moded_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = dfu_moded_deinit,
+        #endif
         .reset            = dfu_moded_reset,
         .open             = dfu_moded_open,
         .control_xfer_cb  = dfu_moded_control_xfer_cb,
@@ -236,7 +269,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("NET")
         .init             = netd_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = netd_deinit,
+        #endif
         .reset            = netd_reset,
         .open             = netd_open,
         .control_xfer_cb  = netd_control_xfer_cb,
@@ -249,7 +284,9 @@ tu_static usbd_class_driver_t const _usbd_driver[] = {
     {
         DRIVER_NAME("BTH")
         .init             = btd_init,
+        #ifdef ESP32_HAS_DEINIT
         .deinit           = btd_deinit,
+        #endif
         .reset            = btd_reset,
         .open             = btd_open,
         .control_xfer_cb  = btd_control_xfer_cb,
@@ -450,6 +487,7 @@ bool tud_deinit(uint8_t rhport) {
   dcd_deinit(rhport);
 
   // Deinit class drivers
+  #ifdef ESP32_HAS_DEINIT
   for (uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++) {
     usbd_class_driver_t const* driver = get_driver(i);
     if(driver && driver->deinit) {
@@ -457,6 +495,7 @@ bool tud_deinit(uint8_t rhport) {
       driver->deinit();
     }
   }
+  #endif
 
   // Deinit device queue & task
   osal_queue_delete(_usbd_q);
