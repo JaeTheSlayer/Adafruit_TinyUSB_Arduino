@@ -47,26 +47,25 @@
   #ifndef TUSB_VERSION_NUMBER
     #define TUSB_VERSION_NUMBER (TUSB_VERSION_MAJOR << 24 | TUSB_VERSION_MINOR << 16 | TUSB_VERSION_REVISION << 8 | TUSB_VERSION_BUILD)
   #endif
-#endif
 
+  #if TUSB_VERSION_NUMBER < 0x0160003
+  // ConfigID for tuh_configure()
+  enum {
+    TUH_CFGID_MAX3421 = 200,
+  };
 
-#if TUSB_VERSION_NUMBER < 0x0160003
-// ConfigID for tuh_configure()
-enum {
-  TUH_CFGID_MAX3421 = 200,
-};
+  typedef struct {
+    uint8_t max_nak; // max NAK per endpoint per frame
+    uint8_t cpuctl; // R16: CPU Control Register
+    uint8_t pinctl; // R17: Pin Control Register. FDUPSPI bit is ignored
+  } tuh_configure_max3421_t;
 
-typedef struct {
-  uint8_t max_nak; // max NAK per endpoint per frame
-  uint8_t cpuctl; // R16: CPU Control Register
-  uint8_t pinctl; // R17: Pin Control Register. FDUPSPI bit is ignored
-} tuh_configure_max3421_t;
+  typedef union {
+    // For TUH_CFGID_RPI_PIO_USB_CONFIGURATION use pio_usb_configuration_t
 
-typedef union {
-  // For TUH_CFGID_RPI_PIO_USB_CONFIGURATION use pio_usb_configuration_t
-
-  tuh_configure_max3421_t max3421;
-} tuh_configure_param_t;
+    tuh_configure_max3421_t max3421;
+  } tuh_configure_param_t;
+  #endif
 #endif
 
 //--------------------------------------------------------------------+

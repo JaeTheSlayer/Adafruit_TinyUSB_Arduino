@@ -89,7 +89,10 @@ extern "C" {
 //--------------------------------------------------------------------
 
 // Enable host stack with MAX3421E (host shield)
+#ifndef CFG_TUH_ENABLED
 #define CFG_TUH_ENABLED 1
+#endif
+
 #define CFG_TUH_MAX_SPEED OPT_MODE_FULL_SPEED
 #define CFG_TUH_MAX3421 1
 
